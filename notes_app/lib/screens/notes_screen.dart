@@ -1,59 +1,70 @@
-class NotesScreen extends StatelessWidget {
-  final TextEditingController noteCtrl = TextEditingController();
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../cubit/notes_cubit.dart';
+import '../widgets/note_tile.dart';
 
-  void showDialogToAddNote(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('New Note'),
-        content: TextField(controller: noteCtrl),
-        actions: [
-          TextButton(
-            onPressed: () {
-              context.read<NotesCubit>().addNote(noteCtrl.text);
-              noteCtrl.clear();
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Note added!")));
-            },
-            child: Text('Save'),
-          )
-        ],
-      ),
-    );
-  }
+class NotesScreen extends StatelessWidget {
+  final noteCtrl = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.watch<NotesCubit>();
+    final notesCubit = context.watch<NotesCubit>();
+    final notes = notesCubit.state;
+
     return Scaffold(
-      appBar: AppBar(title: Text('My Notes')),
-      body: cubit.state.isEmpty
-          ? Center(child: Text('Nothing here yet—tap ➕ to add a note.'))
+      appBar: AppBar(title: Text("Your Notes")),
+      body: notes.isEmpty
+          ? Center(child: Text("Nothing here yet—tap ➕ to add a note."))
           : ListView.builder(
-              itemCount: cubit.state.length,
-              itemBuilder: (context, i) {
-                final note = cubit.state[i];
-                return ListTile(
-                  title: Text(note.text),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                          icon: Icon(Icons.edit),
-                          onPressed: () => context.read<NotesCubit>().updateNote(note.id, "Updated")),
-                      IconButton(
-                          icon: Icon(Icons.delete),
-                          onPressed: () {
-                            context.read<NotesCubit>().deleteNote(note.id);
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Note deleted!")));
-                          }),
-                    ],
-                  ),
+              itemCount: notes.length,
+              itemBuilder: (_, i) {
+                final note = notes[i];
+                return NoteTile(
+                  note: note,
+                  onEdit: () {
+                    noteCtrl.text = note.text;
+                    showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: Text("Edit Note"),
+                        content: TextField(controller: noteCtrl),
+                        actions: [
+                          TextButton(
+                              onPressed: () {
+                                context.read<NotesCubit>().updateNote(note.id, noteCtrl.text);
+                                Navigator.pop(context);
+                              },
+                              child: Text("Update"))
+                        ],
+                      ),
+                    );
+                  },
+                  onDelete: () {
+                    context.read<NotesCubit>().deleteNote(note.id);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Note deleted")));
+                  },
                 );
               }),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => showDialogToAddNote(context),
         child: Icon(Icons.add),
+        onPressed: () {
+          noteCtrl.clear();
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: Text("New Note"),
+              content: TextField(controller: noteCtrl),
+              actions: [
+                TextButton(
+                    onPressed: () {
+                      context.read<NotesCubit>().addNote(noteCtrl.text);
+                      Navigator.pop(context);
+                    },
+                    child: Text("Save"))
+              ],
+            ),
+          );
+        },
       ),
     );
   }

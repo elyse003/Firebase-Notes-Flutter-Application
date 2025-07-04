@@ -1,11 +1,15 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../models/note_model.dart';
+import '../repository/note_repository.dart';
+
 class NotesCubit extends Cubit<List<Note>> {
   final NoteRepository _repo;
-
   NotesCubit(this._repo) : super([]);
 
   Future<void> fetchNotes() async {
     try {
-      emit(await _repo.getNotes());
+      final notes = await _repo.getNotes();
+      emit(notes);
     } catch (_) {
       emit([]);
     }
