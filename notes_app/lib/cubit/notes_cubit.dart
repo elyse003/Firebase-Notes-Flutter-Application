@@ -2,16 +2,27 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/note_model.dart';
 import '../repository/note_repository.dart';
 
-class NotesCubit extends Cubit<List<Note>> {
+abstract class NotesState {}
+
+class NotesLoading extends NotesState {}
+
+class NotesLoaded extends NotesState {
+  final List<Note> notes;
+  NotesLoaded(this.notes);
+}
+
+class NotesCubit extends Cubit<NotesState> {
   final NoteRepository _repo;
-  NotesCubit(this._repo) : super([]);
+
+  NotesCubit(this._repo) : super(NotesLoading());
 
   Future<void> fetchNotes() async {
+    emit(NotesLoading());
     try {
       final notes = await _repo.getNotes();
-      emit(notes);
+      emit(NotesLoaded(notes));
     } catch (_) {
-      emit([]);
+      emit(NotesLoaded([])); // fallback in case of error
     }
   }
 

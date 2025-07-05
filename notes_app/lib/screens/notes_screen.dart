@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/notes_cubit.dart';
+import '../models/note_model.dart';
 import '../widgets/note_tile.dart';
 
 class NotesScreen extends StatelessWidget {
@@ -8,14 +9,18 @@ class NotesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notesCubit = context.watch<NotesCubit>();
-    final notes = notesCubit.state;
-
     return Scaffold(
       appBar: AppBar(title: Text("Your Notes")),
-      body: notes.isEmpty
-          ? Center(child: Text("Nothing here yet—tap ➕ to add a note."))
-          : ListView.builder(
+      body: BlocBuilder<NotesCubit, NotesState>(
+        builder: (context, state) {
+          if (state is NotesLoading) {
+            return Center(child: CircularProgressIndicator());
+          } else if (state is NotesLoaded) {
+            final notes = state.notes;
+            if (notes.isEmpty) {
+              return Center(child: Text("Nothing here yet—tap ➕ to add a note."));
+            }
+            return ListView.builder(
               itemCount: notes.length,
               itemBuilder: (_, i) {
                 final note = notes[i];
@@ -30,11 +35,13 @@ class NotesScreen extends StatelessWidget {
                         content: TextField(controller: noteCtrl),
                         actions: [
                           TextButton(
-                              onPressed: () {
-                                context.read<NotesCubit>().updateNote(note.id, noteCtrl.text);
-                                Navigator.pop(context);
-                              },
-                              child: Text("Update"))
+                            onPressed: () {
+                              context.read<NotesCubit>().updateNote(note.id, noteCtrl.text);
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Note updated")));
+                            },
+                            child: Text("Update"),
+                          )
                         ],
                       ),
                     );
@@ -44,7 +51,12 @@ class NotesScreen extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Note deleted")));
                   },
                 );
-              }),
+              },
+            );
+          }
+          return Center(child: Text("Unexpected error"));
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
         onPressed: () {
@@ -56,11 +68,13 @@ class NotesScreen extends StatelessWidget {
               content: TextField(controller: noteCtrl),
               actions: [
                 TextButton(
-                    onPressed: () {
-                      context.read<NotesCubit>().addNote(noteCtrl.text);
-                      Navigator.pop(context);
-                    },
-                    child: Text("Save"))
+                  onPressed: () {
+                    context.read<NotesCubit>().addNote(noteCtrl.text);
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Note added")));
+                  },
+                  child: Text("Save"),
+                )
               ],
             ),
           );
